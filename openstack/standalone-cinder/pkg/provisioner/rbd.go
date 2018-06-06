@@ -51,7 +51,7 @@ func getRbdSecretName(pvc *v1.PersistentVolumeClaim) string {
 	return fmt.Sprintf("%s-cephx-secret", helper.GetPersistentVolumeClaimClass(pvc))
 }
 
-func (m *rbdMapper) BuildPVSource(conn volumeservice.VolumeConnection, options controller.VolumeOptions) (*v1.PersistentVolumeSource, error) {
+func (m *rbdMapper) BuildPVSource(p *cinderProvisioner, conn volumeservice.VolumeConnection, options controller.VolumeOptions) (*v1.PersistentVolumeSource, error) {
 	mons := getMonitors(conn)
 	if mons == nil {
 		return nil, errors.New("No monitors could be parsed from connection info")

@@ -30,7 +30,7 @@ import (
 type volumeMapper interface {
 	// BuildPVSource should build a PersistentVolumeSource from cinder connection
 	// information and context from the cluster such as the PVC.
-	BuildPVSource(conn volumeservice.VolumeConnection, options controller.VolumeOptions) (*v1.PersistentVolumeSource, error)
+	BuildPVSource(p *cinderProvisioner, conn volumeservice.VolumeConnection, options controller.VolumeOptions) (*v1.PersistentVolumeSource, error)
 	// AuthSetup should perform any authentication setup such as secret creation
 	// that would be required before a host can connect to the volume.
 	AuthSetup(p *cinderProvisioner, options controller.VolumeOptions, conn volumeservice.VolumeConnection) error
@@ -47,7 +47,10 @@ func newVolumeMapperFromConnection(conn volumeservice.VolumeConnection) (volumeM
 	case iscsiType:
 		return &iscsiMapper{cb: &k8sClusterBroker{}}, nil
 	case rbdType:
-		return new(rbdMapper), nil
+		//return new(rbdMapper), nil
+		fallthrough
+	case virtletFlexVolumeRBDType:
+		return &flexVolumeRbdMapper{cb: &k8sClusterBroker{}}, nil
 	}
 }
 
@@ -56,13 +59,15 @@ func newVolumeMapperFromPV(pv *v1.PersistentVolume) (volumeMapper, error) {
 		return &iscsiMapper{cb: &k8sClusterBroker{}}, nil
 	} else if pv.Spec.RBD != nil {
 		return new(rbdMapper), nil
+	} else if pv.Spec.FlexVolume != nil {
+		return &flexVolumeRbdMapper{cb: &k8sClusterBroker{}}, nil
 	} else {
 		return nil, errors.New("Unsupported persistent volume source")
 	}
 }
 
 func buildPV(m volumeMapper, p *cinderProvisioner, options controller.VolumeOptions, conn volumeservice.VolumeConnection, volumeID string) (*v1.PersistentVolume, error) {
-	pvSource, err := m.BuildPVSource(conn, options)
+	pvSource, err := m.BuildPVSource(p, conn, options)
 	if err != nil {
 		glog.Errorf("Failed to build PV Source element: %v", err)
 		return nil, err

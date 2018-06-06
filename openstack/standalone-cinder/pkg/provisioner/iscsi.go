@@ -38,7 +38,7 @@ func getChapSecretName(connection volumeservice.VolumeConnection, options contro
 	return ""
 }
 
-func (m *iscsiMapper) BuildPVSource(conn volumeservice.VolumeConnection, options controller.VolumeOptions) (*v1.PersistentVolumeSource, error) {
+func (m *iscsiMapper) BuildPVSource(p *cinderProvisioner, conn volumeservice.VolumeConnection, options controller.VolumeOptions) (*v1.PersistentVolumeSource, error) {
 	ret := &v1.PersistentVolumeSource{
 		ISCSI: &v1.ISCSIPersistentVolumeSource{
 			// TODO: Need some way to specify the initiator name

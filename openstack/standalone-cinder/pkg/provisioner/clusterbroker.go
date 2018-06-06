@@ -19,12 +19,14 @@ package provisioner
 import (
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // clusterBroker provides a mechanism for tests to override calls kubernetes with mocks.
 type clusterBroker interface {
 	createSecret(p *cinderProvisioner, ns string, secret *v1.Secret) error
 	deleteSecret(p *cinderProvisioner, ns string, secretName string) error
+	getSecret(p *cinderProvisioner, ns string, secretName string) (*v1.Secret, error)
 }
 
 type k8sClusterBroker struct {
@@ -49,4 +51,14 @@ func (*k8sClusterBroker) deleteSecret(p *cinderProvisioner, ns string, secretNam
 	}
 	glog.V(3).Infof("Successfully deleted secret %s", secretName)
 	return nil
+}
+
+func (*k8sClusterBroker) getSecret(p *cinderProvisioner, ns string, secretName string) (*v1.Secret, error) {
+	secret, err := p.Client.CoreV1().Secrets(ns).Get(secretName, meta_v1.GetOptions{})
+	if err != nil {
+		glog.Errorf("Failed to get secret %s from namespace %s: %v", secretName, ns, err)
+		return nil, err
+	}
+	glog.V(3).Infof("Successfully get secret %s", secretName)
+	return secret, nil
 }
